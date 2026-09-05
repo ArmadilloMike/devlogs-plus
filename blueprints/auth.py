@@ -4,6 +4,7 @@ import secrets
 
 import requests
 from authlib.integrations.base_client import OAuthError
+from authlib.oauth2.rfc6749.grants import refresh_token
 from flask import Blueprint, jsonify, request, url_for, redirect, session
 from flask_login import login_user, logout_user, login_required, current_user
 from itsdangerous import URLSafeSerializer, SignatureExpired, BadSignature, URLSafeTimedSerializer
@@ -11,7 +12,7 @@ from itsdangerous import URLSafeSerializer, SignatureExpired, BadSignature, URLS
 from flask import current_app
 from sqlalchemy.exc import SQLAlchemyError
 
-from models import User, HackatimeConnection
+from models import User, HackatimeConnection, WakatimeConnection
 from extensions import db
 from oauth import oauth
 from render_functions import send_reset_email
@@ -476,7 +477,7 @@ def hackatime_connect_callback():
     token_type = token.get('token_type', 'Bearer')
 
     if not access_token:
-        return jsonify({'error': 'hackatime did not return and access token'}), 400
+        return jsonify({'error': 'hackatime did not return an access token'}), 400
 
     expires_at = None
     if expires_in:
@@ -538,3 +539,51 @@ def get_hackatime_projects():
 
     return jsonify(response.json()), 200
 
+@auth_bp.route('/auth/wakatime/connect')
+@login_required
+def wakatime_connect():
+    redirect_uri = url_for('auth_bp.wakatime_connect_callback', _external=True)
+    return oauth.wakatime.authorize_redirect(redirect_uri)
+
+@auth_bp.route('/auth/wakatime/connect/callback')
+@login_required
+def wakatime_connect_callback():
+    oauth_error = request.args.get('error')
+    if oauth_error:
+        description = request.args.get('error_description') or 'WakaTime connection was cancelled or denied'
+        return jsonify({'error': oauth_error, 'description': description}), 400
+
+    try:
+        token = oauth.wakatime.authorize_access_token()
+    except OAuthError as error:
+        return jsonify({'error': error.error, 'description': error.description or 'WakaTime connection failed'}), 400
+
+    access_token = token.get('access_token')
+    refresh_token = token.get('refresh_token')
+    expires_in = token.get('expires_in')
+    token_type = token.get('token_type', 'Bearer')
+
+    if not access_token:
+        return jsonify({'error': 'wakatime did not return an access token'}), 400
+
+    expires_at = None
+    if expires_in:
+        expires_at = datetime.utcnow() + timedelta(seconds=int(expires_in))
+
+    connection = WakatimeConnection.query.filter_by(user_id=current_user.id).first()
+
+    if connection is None:
+        connection = WakatimeConnection(user_id=current_user.id)
+        db.session.add(connection)
+
+    connection.access_token = access_token
+    connection.refresh_token = refresh_token
+    connection.token_type = token_type
+    connection.expires_at = expires_at
+
+    db.session.commit()
+
+    return redirect(os.environ.get('FRONTEND_URL', 'https://localhost:5173'))
+
+#TODO: disconnect wakatime
+#TODO: view user wakatime projects
