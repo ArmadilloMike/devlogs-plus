@@ -29,3 +29,12 @@ def init_oauth(app):
         api_base_url='https://hackatime.hackclub.com/api',
         client_kwargs={'scope': 'profile read'}
     )
+    oauth.register(
+        name='wakatime',
+        client_id=app.config['WAKATIME_CLIENT_ID'],
+        client_secret=app.config['WAKATIME_CLIENT_SECRET'],
+        authorize_url='https://wakatime.com/oauth/authorize',
+        access_token_url='https://wakatime.com/oauth/token',
+        api_base_url='https://wakatime.com/api/v1/',
+        client_kwargs={'scope': 'read_logged_time read_stats read_projects'}
+    )
