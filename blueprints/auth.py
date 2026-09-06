@@ -512,9 +512,9 @@ def disconnect_hackatime():
         db.session.rollback()
         return jsonify({'error': f'error removing hackatime connection: {e}'}), 500
     except Exception as e:
-        return jsonify({'error': f'error removing hackatime connection: {e}'})
+        return jsonify({'error': f'error removing hackatime connection: {e}'}), 500
 
-    return jsonify({'message': 'hackatime account successfully disconnected'})
+    return jsonify({'message': 'hackatime account successfully disconnected'}), 200
 
 
 @auth_bp.route('/auth/hackatime/projects', methods=['GET'])
@@ -585,5 +585,22 @@ def wakatime_connect_callback():
 
     return redirect(os.environ.get('FRONTEND_URL', 'https://localhost:5173'))
 
-#TODO: disconnect wakatime
+@auth_bp.route('/auth/wakatime/connect', methods=['DELETE'])
+@login_required
+def disconnect_wakatime():
+    connection = WakatimeConnection.query.filter_by(user_id=current_user.id).first()
+    if connection is None:
+        return jsonify({'error': 'no wakatime account to disconnect'}), 400
+
+    try:
+        db.session.delete(connection)
+        db.session.commit()
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': f'error removing wakatime connection: {e}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'error removing wakatime connection: {e}'}), 500
+
+    return jsonify({'message': 'wakatime account successfully disconnected'}), 200
+
 #TODO: view user wakatime projects
