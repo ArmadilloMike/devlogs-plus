@@ -585,7 +585,7 @@ def wakatime_connect_callback():
 
     return redirect(os.environ.get('FRONTEND_URL', 'https://localhost:5173'))
 
-@auth_bp.route('/auth/wakatime/connect', methods=['DELETE'])
+@auth_bp.route('/auth/wakatime/disconnect', methods=['DELETE'])
 @login_required
 def disconnect_wakatime():
     connection = WakatimeConnection.query.filter_by(user_id=current_user.id).first()

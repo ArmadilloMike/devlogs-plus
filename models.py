@@ -31,7 +31,7 @@ class HackatimeConnection(db.Model):
 class WakatimeConnection(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
-    wakatime_user_id = db.COlumn(db.String(200))
+    wakatime_user_id = db.Column(db.String(200))
     access_token = db.Column(db.Text, nullable=False)
     refresh_token = db.Column(db.Text)
     token_type = db.Column(db.String(50), default='Bearer')
