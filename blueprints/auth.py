@@ -603,4 +603,22 @@ def disconnect_wakatime():
 
     return jsonify({'message': 'wakatime account successfully disconnected'}), 200
 
-#TODO: view user wakatime projects
+@auth_bp.route('/auth/wakatime/projects', methods=['GET'])
+@login_required
+def get_wakatime_projects():
+    connection = WakatimeConnection.query.filter_by(user_id=current_user.id).first()
+    if connection is None:
+        return jsonify({'error': 'wakatime acount not connected'}), 400
+
+    response = requests.get(
+        'https://wakatime.com/api/v1/authenticated/projects',
+        headers={'Authorization': f'Bearer {connection.access_token}'},
+        timeout=10
+    )
+
+    if response.status_code == 401:
+        return jsonify({'error': 'wakatime token is invalid. please sign in to wakatime again'}), 401
+    if not response.ok:
+        return jsonify({'error': 'failed to get wakatime projects'}), 502
+
+    return jsonify(response.json()), 200
