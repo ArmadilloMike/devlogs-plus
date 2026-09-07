@@ -5,7 +5,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 
 from extensions import db
-from models import Project, ProjectCollaborator, TimeTrackingConnection
+from models import Project, ProjectCollaborator, TimeTrackingConnection, ProjectTimeTrackingProject
 
 project_bp = Blueprint('project_bp', __name__)
 
@@ -212,75 +212,33 @@ def get_project_collaborators(project_id):
         'collaborator_user_id': user_ids
     }), 200
 
-@project_bp.route('/projects/<int:project_id>/hackatime', methods=['PATCH'])
+@project_bp.route('/projects/<int:project_id>/time', methods=['PATCH'])
 @login_required
-def link_hackatime_project(project_id):
+def link_time_project(project_id):
     data = request.get_json()
 
     if not isinstance(data, dict):
         return jsonify({'error': 'request body must be valid json'}), 400
 
-    hackatime_project_name = data.get('hackatime_project_name')
+    time_tracking_project_names = data.get('time_tracking_project_names')
 
-    if not hackatime_project_name:
-        return jsonify({'error': 'project name is required'}), 400
+    if not isinstance(time_tracking_project_names, list) or not time_tracking_project_names:
+        return jsonify({'error': 'time_tracking_project_names must be a non-empty list'}), 400
 
     project = Project.query.get(project_id)
 
     if not project:
         return jsonify({'error': 'project not found'}), 404
-
     if project.owner_user_id != current_user.id:
         return jsonify({'error': 'current user does not own project'}), 403
 
-    project.hackatime_project_name = hackatime_project_name
-    db.session.commit()
+    ProjectTimeTrackingProject.query.filter_by(project_id=project.id).delete()
 
-    return jsonify({
-        'message': 'hackatime project linked',
-        'project_id': project.id,
-        'hackatime_project_name': project.hackatime_project_name
-    }), 200
+    for name in time_tracking_project_names:
+        if not isinstance(name, str) or not name.strip():
+            return jsonify({'error': 'each time tracking project name must be a non-empty string'}), 400
+        db.session.add(ProjectTimeTrackingProject(project_id=project.id, name=name.strip()))
 
-@project_bp.route('/projects/<int:project_id>/hackatime', methods=['GET'])
-@login_required
-def get_hackatime_project(project_id):
-    project = Project.query.get(project_id)
+    db. session.commit()
 
-    if not project:
-        return jsonify({'error': 'project not found'}), 404
-    if project.owner_user_id != current_user.id:
-        return jsonify({'error': 'current user does not use project'}), 403
-    if not project.hackatime_project_name:
-        return jsonify({'error': 'project not linked'}), 400
-
-    connection = TimeTrackingConnection.query.filter_by(user_id=current_user.id, provider='hackatime').first()
-
-    if connection is None:
-        return jsonify({'error': 'hackatime account not connected'}), 400
-
-    response = requests.get('https://hackatime.hackclub.com/api/v1/authenticated/projects', headers={
-        'Authorization': f'Bearer {connection.access_token}'
-    }, timeout=10)
-
-    if response.status_code == 401:
-        return jsonify({'error': 'hackatime token invalid, reconnect hackatime'}), 401
-    if not response.ok:
-        return jsonify({'error': 'failed to get hackatime'}), 502
-
-    hackatime_projects = response.json().get('projects', [])
-    hackatime_project = next((
-        item for item in hackatime_projects
-        if item.get('name') == project.hackatime_project_name
-    ), None)
-    if hackatime_project is None:
-        return jsonify({'error': 'linked hackatime project not found'}), 404
-
-    total_seconds = hackatime_project.get('total_seconds', 0)
-
-    return jsonify({
-        'project_id': project.id,
-        'project_name': project.name,
-        'hackatime_project_name': project.hackatime_project_name,
-        'total_seconds': total_seconds
-    }), 200
+    return jsonify({'message': 'time tracking project linked'}), 200
