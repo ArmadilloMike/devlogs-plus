@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from sqlalchemy.orm import backref
+
 from extensions import db, bcrypt
 from flask_login import UserMixin
 
@@ -43,9 +45,28 @@ class Project(db.Model):
     short_description = db.Column(db.Text)
     demo_url = db.Column(db.String(500))
     repo_url = db.Column(db.String(500))
-    hackatime_project_name = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    time_tracking_projects = db.relationship(
+        'ProjectTimeTrackingProject',
+        backref='project',
+        cascade='all, delete-orphan`'
+    )
+
+class ProjectTimeTrackingProject(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    provider = db.Column(db.String(50))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    __table_args__ = (
+        db.UniqueConstraint(
+            'project_id',
+            'name',
+            'provider',
+            name='unique_project_time_tracking_name'
+        )
+    )
 
 class ProjectCollaborator(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), primary_key=True)
