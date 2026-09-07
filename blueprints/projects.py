@@ -5,7 +5,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 
 from extensions import db
-from models import Project, ProjectCollaborator, HackatimeConnection
+from models import Project, ProjectCollaborator, TimeTrackingConnection
 
 project_bp = Blueprint('project_bp', __name__)
 
@@ -254,7 +254,7 @@ def get_hackatime_project(project_id):
     if not project.hackatime_project_name:
         return jsonify({'error': 'project not linked'}), 400
 
-    connection = HackatimeConnection.query.filter_by(user_id=current_user.id).first()
+    connection = TimeTrackingConnection.query.filter_by(user_id=current_user.id, provider='hackatime').first()
 
     if connection is None:
         return jsonify({'error': 'hackatime account not connected'}), 400

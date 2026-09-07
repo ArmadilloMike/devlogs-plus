@@ -12,7 +12,7 @@ from itsdangerous import URLSafeSerializer, SignatureExpired, BadSignature, URLS
 from flask import current_app
 from sqlalchemy.exc import SQLAlchemyError
 
-from models import User, HackatimeConnection, WakatimeConnection, TimeTrackingConnection
+from models import User, TimeTrackingConnection
 from extensions import db
 from oauth import oauth
 from render_functions import send_reset_email
