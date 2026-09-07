@@ -12,7 +12,7 @@ from itsdangerous import URLSafeSerializer, SignatureExpired, BadSignature, URLS
 from flask import current_app
 from sqlalchemy.exc import SQLAlchemyError
 
-from models import User, HackatimeConnection, WakatimeConnection
+from models import User, HackatimeConnection, WakatimeConnection, TimeTrackingConnection
 from extensions import db
 from oauth import oauth
 from render_functions import send_reset_email
@@ -483,10 +483,10 @@ def hackatime_connect_callback():
     if expires_in:
         expires_at = datetime.utcnow() + timedelta(seconds=int(expires_in))
 
-    connection = HackatimeConnection.query.filter_by(user_id=current_user.id).first()
+    connection = TimeTrackingConnection.query.filter_by(user_id=current_user.id, provider='hackatime').first()
 
     if connection is None:
-        connection = HackatimeConnection(user_id=current_user.id)
+        connection = TimeTrackingConnection(user_id=current_user.id, provider='hackatime')
         db.session.add(connection)
 
     connection.access_token = access_token
@@ -501,7 +501,7 @@ def hackatime_connect_callback():
 @auth_bp.route('/auth/hackatime/disconnect', methods=['DELETE'])
 @login_required
 def disconnect_hackatime():
-    connection = HackatimeConnection.query.filter_by(user_id=current_user.id).first()
+    connection = TimeTrackingConnection.query.filter_by(user_id=current_user.id, provider='hackatime').first()
     if connection is None:
         return jsonify({'error': 'no hackatime account to disconnect'}), 400
 
@@ -520,7 +520,7 @@ def disconnect_hackatime():
 @auth_bp.route('/auth/hackatime/projects', methods=['GET'])
 @login_required
 def get_hackatime_projects():
-    connection = HackatimeConnection.query.filter_by(user_id=current_user.id).first()
+    connection = TimeTrackingConnection.query.filter_by(user_id=current_user.id, provider='hackatime').first()
 
     if connection is None:
         return jsonify({'error': 'hackatime account not connected'}), 400
@@ -570,10 +570,10 @@ def wakatime_connect_callback():
     if expires_in:
         expires_at = datetime.utcnow() + timedelta(seconds=int(expires_in))
 
-    connection = WakatimeConnection.query.filter_by(user_id=current_user.id).first()
+    connection = TimeTrackingConnection.query.filter_by(user_id=current_user.id, provider='wakatime').first()
 
     if connection is None:
-        connection = WakatimeConnection(user_id=current_user.id)
+        connection = TimeTrackingConnection(user_id=current_user.id, provider='wakatime')
         db.session.add(connection)
 
     connection.access_token = access_token
@@ -588,7 +588,7 @@ def wakatime_connect_callback():
 @auth_bp.route('/auth/wakatime/disconnect', methods=['DELETE'])
 @login_required
 def disconnect_wakatime():
-    connection = WakatimeConnection.query.filter_by(user_id=current_user.id).first()
+    connection = TimeTrackingConnection.query.filter_by(user_id=current_user.id, provider='wakatime').first()
     if connection is None:
         return jsonify({'error': 'no wakatime account to disconnect'}), 400
 
@@ -606,7 +606,7 @@ def disconnect_wakatime():
 @auth_bp.route('/auth/wakatime/projects', methods=['GET'])
 @login_required
 def get_wakatime_projects():
-    connection = WakatimeConnection.query.filter_by(user_id=current_user.id).first()
+    connection = TimeTrackingConnection.query.filter_by(user_id=current_user.id, provider='wakatime').first()
     if connection is None:
         return jsonify({'error': 'wakatime acount not connected'}), 400
 
