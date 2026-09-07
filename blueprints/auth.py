@@ -4,7 +4,6 @@ import secrets
 
 import requests
 from authlib.integrations.base_client import OAuthError
-from authlib.oauth2.rfc6749.grants import refresh_token
 from flask import Blueprint, jsonify, request, url_for, redirect, session
 from flask_login import login_user, logout_user, login_required, current_user
 from itsdangerous import URLSafeSerializer, SignatureExpired, BadSignature, URLSafeTimedSerializer
