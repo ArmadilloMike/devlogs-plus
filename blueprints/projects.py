@@ -239,6 +239,6 @@ def link_time_project(project_id):
             return jsonify({'error': 'each time tracking project name must be a non-empty string'}), 400
         db.session.add(ProjectTimeTrackingProject(project_id=project.id, name=name.strip()))
 
-    db. session.commit()
+    db.session.commit()
 
     return jsonify({'message': 'time tracking project linked'}), 200

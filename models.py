@@ -35,7 +35,7 @@ class TimeTrackingConnection(db.Model):
             'user_id',
             'provider',
             name='unique_user_time_tracking_provider'
-        )
+        ),
     )
 
 class Project(db.Model):
@@ -50,12 +50,12 @@ class Project(db.Model):
     time_tracking_projects = db.relationship(
         'ProjectTimeTrackingProject',
         backref='project',
-        cascade='all, delete-orphan`'
+        cascade='all, delete-orphan'
     )
 
 class ProjectTimeTrackingProject(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    project_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
     name = db.Column(db.String(200), nullable=False)
     provider = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -65,7 +65,7 @@ class ProjectTimeTrackingProject(db.Model):
             'name',
             'provider',
             name='unique_project_time_tracking_name'
-        )
+        ),
     )
 
 class ProjectCollaborator(db.Model):
